@@ -1,8 +1,9 @@
+// ignore_for_file: avoid_print
+
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 import './widgets/transaction_list.dart';
 import './widgets/new_transaction.dart';
@@ -21,12 +22,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-          primarySwatch: Colors.purple,
-          errorColor: Colors.red,
           useMaterial3: true,
           fontFamily: 'Quicksand',
           textTheme: ThemeData.light().textTheme.copyWith(
-              titleLarge: TextStyle(
+              titleLarge: const TextStyle(
                   fontFamily: 'OpenSans',
                   fontSize: 16,
                   fontWeight: FontWeight.bold)),
@@ -34,7 +33,7 @@ class MyApp extends StatelessWidget {
               toolbarTextStyle: ThemeData.light()
                   .textTheme
                   .copyWith(
-                      titleLarge: TextStyle(
+                      titleLarge: const TextStyle(
                     fontFamily: 'OpenSans',
                     fontSize: 20,
                   ))
@@ -42,22 +41,26 @@ class MyApp extends StatelessWidget {
               titleTextStyle: ThemeData.light()
                   .textTheme
                   .copyWith(
-                      titleLarge: TextStyle(
+                      titleLarge: const TextStyle(
                           fontFamily: 'OpenSans',
                           fontSize: 20,
                           fontWeight: FontWeight.bold))
-                  .titleLarge)),
-      home: MyHomePage(),
+                  .titleLarge),
+          colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.purple)
+              .copyWith(error: Colors.red)),
+      home: const MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   // String titleInput = '';
 
   final List<Transaction> _userTransactions = [
@@ -75,10 +78,27 @@ class _MyHomePageState extends State<MyHomePage> {
 
   bool _showChart = false;
 
+  @override
+  void initState() {
+    WidgetsBinding.instance.addObserver(this);
+    super.initState();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    print(state);
+  }
+
+  @override
+  dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
   List<Transaction> get _recentTransactions {
     return _userTransactions.where((tx) {
       return tx.date.isAfter(DateTime.now().subtract(
-        Duration(days: 7),
+        const Duration(days: 7),
       ));
     }).toList();
   }
@@ -102,7 +122,7 @@ class _MyHomePageState extends State<MyHomePage> {
           return Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Container(
+              SizedBox(
                   width: MediaQuery.of(ctx).size.width * 0.8,
                   height: MediaQuery.of(ctx).size.height * 0.6,
                   child: NewTransaction(addTransaction: _addTransaction)),
@@ -117,21 +137,47 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  List<Widget> _buildLandscapeContent(
+      Function chartBarWidget, Widget txListWidget) {
+    return [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          const Text('Show Chart'),
+          Switch.adaptive(
+            value: _showChart,
+            onChanged: (value) {
+              setState(() {
+                _showChart = value;
+              });
+            },
+          ),
+        ],
+      ),
+      _showChart ? chartBarWidget(0.7) : txListWidget
+    ];
+  }
+
+  List<Widget> _buildPortraitContent(
+      Function chartBarWidget, Widget txListWidget) {
+    return [chartBarWidget(0.3), txListWidget];
+  }
+
   @override
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final isLandScape = mediaQuery.orientation == Orientation.landscape;
     final appBar = AppBar(
       backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      title: Text('Expense Tracker'),
+      title: const Text('Expense Tracker'),
       actions: <Widget>[
         IconButton(
             onPressed: () => _startAddNewTransaction(context),
-            icon: Icon(Icons.add))
+            icon: const Icon(Icons.add))
       ],
     );
 
-    final txListWidget = Container(
+    final txListWidget = SizedBox(
       height: (mediaQuery.size.height -
               appBar.preferredSize.height -
               mediaQuery.padding.top) *
@@ -143,7 +189,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
 
-    chartBarWidget(height) => Container(
+    chartBarWidget(height) => SizedBox(
           height: (mediaQuery.size.height -
                   appBar.preferredSize.height -
                   mediaQuery.padding.top) *
@@ -160,30 +206,16 @@ class _MyHomePageState extends State<MyHomePage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (isLandScape)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text('Show Chart'),
-                Switch.adaptive(
-                  value: _showChart,
-                  onChanged: (value) {
-                    setState(() {
-                      _showChart = value;
-                    });
-                  },
-                ),
-              ],
-            ),
-          if (!isLandScape) chartBarWidget(0.3),
-          if (!isLandScape) txListWidget,
-          if (isLandScape) _showChart ? chartBarWidget(0.7) : txListWidget
+            ..._buildLandscapeContent(chartBarWidget, txListWidget),
+          if (!isLandScape)
+            ..._buildPortraitContent(chartBarWidget, txListWidget),
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Platform.isIOS
           ? Container()
           : FloatingActionButton(
-              child: Icon(Icons.add),
+              child: const Icon(Icons.add),
               onPressed: () => _startAddNewTransaction(context),
             ),
     );

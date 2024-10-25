@@ -1,15 +1,21 @@
-import 'package:flutter/cupertino.dart';
+// ignore_for_file: unnecessary_null_comparison, avoid_print, no_logic_in_create_state
+
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
+
 import 'package:intl/intl.dart';
 
 class NewTransaction extends StatefulWidget {
   final Function addTransaction;
 
-  NewTransaction({required this.addTransaction});
+  NewTransaction({super.key, required this.addTransaction}) {
+    print('constructor NewTransaction widget');
+  }
 
   @override
-  State<NewTransaction> createState() => _NewTransactionState();
+  State<NewTransaction> createState() {
+    print('constructor NewTransaction widget');
+    return _NewTransactionState();
+  }
 }
 
 class _NewTransactionState extends State<NewTransaction> {
@@ -18,6 +24,30 @@ class _NewTransactionState extends State<NewTransaction> {
   final _amountController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
+
+  _NewTransactionState() {
+    print('constructor NewTransaction state');
+  }
+
+  @override
+  void initState() {
+    print('initState()');
+    super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant NewTransaction oldWidget) {
+    print('didUpdateWidget()');
+
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  void dispose() {
+    print('dispose()');
+
+    super.dispose();
+  }
 
   void _submitData() {
     if (_amountController.text.isEmpty) {
